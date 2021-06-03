@@ -1,0 +1,46 @@
+version: "3.4"
+configs:
+  prometheus_config:
+    file: ./prometheus.yml
+
+services:
+  aspnetcore:
+    build:
+      context: AspNetWeb/.
+      dockerfile: Dockerfile
+    container_name: aspnetcore
+    expose:
+      - 80
+    ports:
+      - 9080:80
+      - 9081:443
+    depends_on:
+      - zipkin
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkinlocal
+    expose:
+      - 9411
+    ports:
+      - 9411:9411
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheuslocal
+    ports:
+      - 9090:9090
+    volumes:
+      - ./Prometheus:/prometheus
+    command:
+      - '--config.file=/prometheus/prometheus.yml'
+    depends_on:
+      - aspnetcore
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafanalocal
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
